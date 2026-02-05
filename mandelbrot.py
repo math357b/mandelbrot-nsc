@@ -5,6 +5,7 @@ Course : Numerical Scientific Computing 2026
 """
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 def mandelbrot_point(c):
 
@@ -23,16 +24,21 @@ def compute_mandelbrot(x_min, x_max, y_min, y_max, resx, resy):
     x = np.linspace(x_min, x_max, resx)
     y = np.linspace(y_min, y_max, resy)
 
-    #create array for c
-    all_c = np.zeros((resx, resy), dtype=complex)
+    #create array for n
     all_n = np.zeros((resx, resy), dtype=int)  
 
     for i in range(resx):
         for j in range(resy):
-            all_c[i, j] = x[i] + 1j * y[j]
-            all_n[i, j] = mandelbrot_point(all_c[i,j])
-    return all_c, all_n
+            c = x[i] + 1j * y[j]
+            all_n[i, j] = mandelbrot_point(c)
+    return all_n
 
 if __name__ == "__main__":
-    all_c, all_n = compute_mandelbrot(-2, 1, -1.5, 1.5, 100, 100)
-    print(all_n)
+    start = time.time()
+    all_n = compute_mandelbrot(-2, 1, -1.5, 1.5, 4092, 4092)
+    elapsed = time.time() - start
+    print(f'It took {elapsed} seconds')
+    
+    plt.imshow(all_n)
+    plt.colorbar()
+    plt.show()
