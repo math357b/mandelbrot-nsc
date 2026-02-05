@@ -1,6 +1,6 @@
 """
 Mandelbrot Set Generator
-Author : [ Your Name ]
+Author : [ Mathias Jørgensen ]
 Course : Numerical Scientific Computing 2026
 """
 def f ( x ) :
