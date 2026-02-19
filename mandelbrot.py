@@ -20,7 +20,7 @@ def benchmark(func, *args, n_runs=3):
           f'(min={min(times):.4f}, max={max(times):.4f})')
     return median_t, result
 
-def mandelbrot_point(c):
+def mandelbrot_point_naive(c):
 
     # Parameters
     z = 0
@@ -32,11 +32,43 @@ def mandelbrot_point(c):
             return n
     return max_iter 
         
-def compute_mandelbrot(x_min, x_max, y_min, y_max, resx, resy):
+def compute_mandelbrot_naive(x_dim = tuple[float, float],
+                             y_dim = tuple[float, float],
+                             res = tuple[float, float]):
+    
+    # Pulling out variables from tuples
+    x_min, x_max = x_dim
+    y_min, y_max = y_dim
+    res_x, res_y = res
+
+    # Create 1D arrays
+    x = np.linspace(x_min, x_max, res_x)
+    y = np.linspace(y_min, y_max, res_y)
+
+    #create array for n
+    all_n = np.zeros((res_x, res_y), dtype=int)  
+
+    for i in range(res_x):
+        for j in range(res_y):
+            c = x[i] + 1j * y[j]
+            all_n[i, j] = mandelbrot_point_naive(c)
+    return all_n
+
+def compute_mandelbrot_vectorized(x_dim = tuple[float, float],
+                                  y_dim = tuple[float, float],
+                                  res = tuple[float, float]):
+    
+    # Pulling out variables from tuples
+    x_min, x_max = x_dim
+    y_min, y_max = y_dim
+    res_x, res_y = res
+    
+    # Parameters
+    iter = 100
     
     # Create 1D arrays
-    x = np.linspace(x_min, x_max, resx)
-    y = np.linspace(y_min, y_max, resy)
+    x = np.linspace(x_min, x_max, res_x)
+    y = np.linspace(y_min, y_max, res_y)
 
     # Create 2D arrays
     X, Y = np.meshgrid(x, y)
@@ -44,35 +76,47 @@ def compute_mandelbrot(x_min, x_max, y_min, y_max, resx, resy):
     # Create complex grid
     C = X + 1j * Y
 
-    print(f'Shape: {C.shape}') # (1024, 1024)
-    print(f'Type: {C.dtype}')  # complex128
+    # Initialize Z and M arrays
+    Z = np.zeros(C.shape, dtype=complex) # same as #np.zeros_like(C)
+    M = np.zeros(C.shape, dtype=int) 
 
-    #create array for n
-    all_n = np.zeros((resx, resy), dtype=int)  
+    for _ in range(iter):
+        mask = np.abs(Z) <= 2           # Boolean mask
+        Z[mask] = Z[mask]**2 + C[mask]  # Update only unescaped points (z = z**2 + c)
+        M[mask] += 1                    # Increment iteration count
 
-    for i in range(resx):
-        for j in range(resy):
-            c = x[i] + 1j * y[j]
-            all_n[i, j] = mandelbrot_point(c)
-    return all_n
+    return M
 
 if __name__ == "__main__":
-    """
-    start = time.time()
-    all_n = compute_mandelbrot(-2, 1, -1.5, 1.5, 1024, 1024)
-    elapsed = time.time() - start
-    print(f'Computation took {elapsed:.2f} seconds')
-    """
+
+    # Parameters
     iterations = 3
+    x_dim = (-2, 1)
+    y_dim = (-1.5, 1.5)
+    resolution = (1024, 1024)
 
-    t, M = benchmark(compute_mandelbrot, -2, 1, -1.5, 1.5, 1024, 1024, n_runs=iterations)
-    
-    all_n = M
-
-    plt.imshow(all_n, cmap='hot')
+    # Benchmark and plots of naive approach
+    t_naive, M_naive = benchmark(compute_mandelbrot_naive, x_dim, y_dim, resolution, n_runs=iterations)
+    print(f'Computing naive approach took {t_naive} seconds')
+    plt.imshow(M_naive, cmap='hot')
     plt.title('Mandelbrot Set Figure L1')
     plt.colorbar()
-
     plt.savefig("mandelbrot_naive.png")
+
+    # Benchmark and plots of vectorized approach
+    t_vectorized, M_vectorized = benchmark(compute_mandelbrot_vectorized, x_dim, y_dim, resolution, n_runs=iterations)
+    print(f'Computing naive approach took {t_vectorized} seconds')
+    plt.imshow(M_vectorized, cmap='hot')
+    plt.title('Mandelbrot Set Figure L2')
+    plt.colorbar()
+    plt.savefig("mandelbrot_vectorized.png")
     plt.show()
     plt.close()
+
+    
+        
+
+
+
+
+  
