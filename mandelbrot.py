@@ -34,7 +34,8 @@ def mandelbrot_point_naive(c):
         
 def compute_mandelbrot_naive(x_dim = tuple[float, float],
                              y_dim = tuple[float, float],
-                             res = tuple[float, float]):
+                             res_x = int,
+                             res_y = int):
     
     # Pulling out variables from tuples
     x_min, x_max = x_dim
@@ -56,12 +57,12 @@ def compute_mandelbrot_naive(x_dim = tuple[float, float],
 
 def compute_mandelbrot_vectorized(x_dim = tuple[float, float],
                                   y_dim = tuple[float, float],
-                                  res = tuple[float, float]):
+                                  res_x = int,
+                                  res_y = int):
     
     # Pulling out variables from tuples
     x_min, x_max = x_dim
     y_min, y_max = y_dim
-    res_x, res_y = res
     
     # Parameters
     iter = 100
@@ -105,6 +106,24 @@ if __name__ == "__main__":
     y_dim = (-1.5, 1.5)
     resolution = (1024, 1024)
 
+    res_list = [256, 512, 1024, 2048, 4096]
+    time_plot = []
+
+    for i in res_list:
+        elapsed_vectorized_grid, _ = benchmark(compute_mandelbrot_vectorized, x_dim, y_dim, i, i)
+        time_plot.append(elapsed_vectorized_grid)
+        print(f'Compute runtime for resolution{[i]}. Computation took {elapsed_vectorized_grid}')
+
+    plt.figure()
+    plt.plot(res_list, time_plot)
+    plt.title("Grid size vs runtime")
+    plt.xlabel("Grid size")
+    plt.ylabel("Runtime")
+    plt.grid(True)
+    plt.savefig("gridsize_vs_runtime")
+    plt.show()
+
+    """
     ## Memory Access Patterns (Milestone 3 - Lecture 2)
     N = 10000
     A = np.random.rand(N,N)
@@ -122,9 +141,9 @@ if __name__ == "__main__":
     # results for row and column respectively:
     # Median = 1.1206s(min=1.0590, max=1.1505)
     # Median = 0.1336s(min=0.1300, max=0.1393)
+    """
 
-    exit()
-
+    """
     # Benchmark and plots of naive approach
     t_naive, M_naive = benchmark(compute_mandelbrot_naive, x_dim, y_dim, resolution, n_runs=iterations)
     print(f'Computing naive approach took {t_naive} seconds')
@@ -132,7 +151,9 @@ if __name__ == "__main__":
     plt.title('Mandelbrot Set Figure L1')
     plt.colorbar()
     plt.savefig("mandelbrot_naive.png")
+    """
 
+    """
     # Benchmark and plots of vectorized approach
     t_vectorized, M_vectorized = benchmark(compute_mandelbrot_vectorized, x_dim, y_dim, resolution, n_runs=iterations)
     print(f'Computing naive approach took {t_vectorized} seconds')
@@ -142,6 +163,7 @@ if __name__ == "__main__":
     plt.savefig("mandelbrot_vectorized.png")
     plt.show()
     plt.close()
+    """
 
 
     
