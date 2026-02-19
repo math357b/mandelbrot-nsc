@@ -35,10 +35,14 @@ def compute_mandelbrot(x_min, x_max, y_min, y_max, resx, resy):
 
 if __name__ == "__main__":
     start = time.time()
-    all_n = compute_mandelbrot(-2, 1, -1.5, 1.5, 4092, 4092)
+    all_n = compute_mandelbrot(-2, 1, -1.5, 1.5, 1024, 1024)
     elapsed = time.time() - start
-    print(f'It took {elapsed} seconds')
+    print(f'Computation took {elapsed} seconds')
     
-    plt.imshow(all_n)
+    plt.imshow(all_n, cmap='hot')
+    plt.title('Mandelbrot Set Figure L1')
     plt.colorbar()
+
+    plt.savefig("mandelbrot_naive.png")
     plt.show()
+    plt.close()
