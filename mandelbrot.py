@@ -87,6 +87,16 @@ def compute_mandelbrot_vectorized(x_dim = tuple[float, float],
 
     return M
 
+def compute_row_sums(A = np.ndarray,
+                     N = int):
+    for i in range(N):
+        s = np.sum(A[i,:])
+
+def compute_column_sums(A = np.ndarray,
+                        N = int):
+    for j in range(N):
+        s = np.sum(A[:,j])
+
 if __name__ == "__main__":
 
     # Parameters
@@ -94,6 +104,26 @@ if __name__ == "__main__":
     x_dim = (-2, 1)
     y_dim = (-1.5, 1.5)
     resolution = (1024, 1024)
+
+    ## Memory Access Patterns (Milestone 3 - Lecture 2)
+    N = 10000
+    A = np.random.rand(N,N)
+    t_row_sum, _ = benchmark(compute_row_sums, A, N)
+    t_column_sum, _ = benchmark(compute_column_sums, A, N)
+
+    # results for row and column respectively:
+    # Median: 0.1343s(min=0.1242, max=0.1505)
+    # Median: 1.0571s(min=1.0505, max=1.0861)
+
+    A_f = np.asfortranarray(A)
+    t_row_sum, _ = benchmark(compute_row_sums, A_f, N)
+    t_column_sum, _ = benchmark(compute_column_sums, A_f, N)
+    
+    # results for row and column respectively:
+    # Median = 1.1206s(min=1.0590, max=1.1505)
+    # Median = 0.1336s(min=0.1300, max=0.1393)
+
+    exit()
 
     # Benchmark and plots of naive approach
     t_naive, M_naive = benchmark(compute_mandelbrot_naive, x_dim, y_dim, resolution, n_runs=iterations)
@@ -113,7 +143,9 @@ if __name__ == "__main__":
     plt.show()
     plt.close()
 
+
     
+
         
 
 
