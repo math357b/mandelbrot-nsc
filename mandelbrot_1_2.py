@@ -20,6 +20,7 @@ def benchmark(func, *args, n_runs=3):
           f'(min={min(times):.4f}, max={max(times):.4f})')
     return median_t, result
 
+# Lecture 1 - Naive Implementation
 def mandelbrot_point_naive(c):
 
     # Parameters
@@ -31,7 +32,8 @@ def mandelbrot_point_naive(c):
         if abs(z) > 2:
             return n
     return max_iter 
-        
+
+# Lecture 1 - Naive Implementation        
 def compute_mandelbrot_naive(x_dim = tuple[float, float],
                              y_dim = tuple[float, float],
                              res_x = int,
@@ -40,7 +42,6 @@ def compute_mandelbrot_naive(x_dim = tuple[float, float],
     # Pulling out variables from tuples
     x_min, x_max = x_dim
     y_min, y_max = y_dim
-    res_x, res_y = res
 
     # Create 1D arrays
     x = np.linspace(x_min, x_max, res_x)
@@ -55,6 +56,7 @@ def compute_mandelbrot_naive(x_dim = tuple[float, float],
             all_n[i, j] = mandelbrot_point_naive(c)
     return all_n
 
+# Lecture 2 - Numpy Implementation
 def compute_mandelbrot_vectorized(x_dim = tuple[float, float],
                                   y_dim = tuple[float, float],
                                   res_x = int,
@@ -88,11 +90,13 @@ def compute_mandelbrot_vectorized(x_dim = tuple[float, float],
 
     return M
 
+# Lecture 2 - Numpy Implementation
 def compute_row_sums(A = np.ndarray,
                      N = int):
     for i in range(N):
         s = np.sum(A[i,:])
 
+# Lecture 2 - Numpy Implementation
 def compute_column_sums(A = np.ndarray,
                         N = int):
     for j in range(N):
@@ -106,6 +110,8 @@ if __name__ == "__main__":
     y_dim = (-1.5, 1.5)
     resolution = (1024, 1024)
 
+    """
+    ## Problem Size Scaling (Milestone 4 - Lecture 3)
     res_list = [256, 512, 1024, 2048, 4096]
     time_plot = []
 
@@ -122,6 +128,7 @@ if __name__ == "__main__":
     plt.grid(True)
     plt.savefig("gridsize_vs_runtime")
     plt.show()
+    """
 
     """
     ## Memory Access Patterns (Milestone 3 - Lecture 2)
