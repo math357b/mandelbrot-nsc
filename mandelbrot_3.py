@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import time, statistics
 import cProfile, pstats
 from line_profiler import profile
+from numba import jit, njit, int32, complex128
 
 def benchmark(func, *args, n_runs=3):
     """Time func, return median of n_runs"""
@@ -24,11 +25,11 @@ def benchmark(func, *args, n_runs=3):
 
 # Lecture 3 - Naive Implementation with profile
 @profile     
-def compute_mandelbrot_naive(x_dim = tuple[float, float],
-                             y_dim = tuple[float, float],
-                             res_x = int,
-                             res_y = int,
-                             max_iter=100):
+def compute_mandelbrot_profile(x_dim: tuple[float, float],
+                             y_dim: tuple[float, float],
+                             res_x: int,
+                             res_y: int,
+                             max_iter: int = 100):
     
     # Pulling out variables from tuples
     x_min, x_max = x_dim
@@ -52,16 +53,98 @@ def compute_mandelbrot_naive(x_dim = tuple[float, float],
                 result[i, j] = max_iter
     return result
 
+# Lecture 3 - Naive implementation with jit & njit
+@njit
+def mandelbrot_point_numba(c: np.complex128,
+                           max_iter: np.int32 = 100) -> np.int32:
+    z = 0j
+    for n in range(max_iter):
+        if z.real*z.real + z.imag*z.imag > 4.0:
+            return n
+        z = z*z + c
+    return max_iter
+
+# Lecture 3 - Naive implementation using numba and mandelbrot_point_numba
+def compute_mandelbrot_hybrid(x_dim: tuple[float, float],
+                             y_dim: tuple[float, float],
+                             res: tuple[int, int]):
+    
+    # Pulling out variables from tuples
+    x_min, x_max = x_dim
+    y_min, y_max = y_dim
+    res_x, res_y = res
+
+    # Create 1D arrays
+    x = np.linspace(x_min, x_max, res_x)
+    y = np.linspace(y_min, y_max, res_y)
+
+    #create array for n
+    all_n = np.zeros((res_x, res_y), dtype=int)  
+
+    for i in range(res_x):
+        for j in range(res_y):
+            c = x[i] + 1j * y[j]
+            all_n[i, j] = mandelbrot_point_numba(c)
+    return all_n
+
+# Lecture 3 - Combination of mandelbrot_point_numba and compute_mandelbrot_numba using njit
+@njit
+def compute_mandelbrot_full(x_dim: tuple[float, float],
+                                   y_dim: tuple[float, float],
+                                   res: tuple[int, int],
+                                   max_iter: np.int32 = 100):
+    
+    # Pulling out variables from tuples
+    x_min, x_max = x_dim
+    y_min, y_max = y_dim
+    res_x, res_y = res
+
+    # Create 1D arrays
+    x = np.linspace(x_min, x_max, res_x)
+    y = np.linspace(y_min, y_max, res_y)
+
+    #create array for n
+    result = np.zeros((res_x, res_y), dtype=np.int32)
+
+    for i in range(res_y):
+        for j in range(res_x):
+            c = x[i] + 1j * y[j]
+            z = 0j
+            n = 0
+            while n < max_iter and z.real*z.real + z.imag*z.imag <= 4.0:
+                z = z*z + c
+                n += 1
+            result[i, j] = n
+    return result
+
+
 if __name__ == "__main__":
 
     # Parameters
     iterations = 3
     x_dim = (-2, 1)
     y_dim = (-1.5, 1.5)
-    resolution = (512, 512)
+    resolution_1 = (64, 64)
+    resolution_2 = (1024, 1024)
 
+    # Warm up: First computation doesnt count
+    _ = compute_mandelbrot_hybrid(x_dim=x_dim, y_dim=y_dim, res=resolution_1)
+    _ = compute_mandelbrot_full(x_dim=x_dim, y_dim=y_dim, res=resolution_1)
 
-    compute_mandelbrot_naive(x_dim=x_dim,
-                             y_dim=y_dim,
-                             res_x=resolution[0],
-                             res_y=resolution[1])
+    # Benchmark and plots of numba approach
+    t_hybrid, _ = benchmark(compute_mandelbrot_hybrid, x_dim, y_dim, resolution_2, n_runs=iterations)
+    t_full, _ = benchmark(compute_mandelbrot_full, x_dim, y_dim, resolution_2, n_runs=iterations)
+
+    print(f'Hybrid: {t_hybrid:.3f} seconds')
+    print(f'Full: {t_full:.3f} seconds')
+    print(f'Ratio: {t_hybrid/t_full:.1f}x')
+
+    """
+    Results:
+    Hybrid: 2.130 seconds
+    Full: 0.072 seconds
+    Ratio: 29.7x
+    """
+
+    
+    
