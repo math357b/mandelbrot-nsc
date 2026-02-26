@@ -9,11 +9,11 @@ import time, statistics
 import cProfile, pstats
 from line_profiler import profile
 from numba import jit, njit, int32, complex128
+from mandelbrot_1_2 import compute_mandelbrot_naive, compute_mandelbrot_numpy
 
-def benchmark(func, *args, n_runs=3):
+def benchmark(func, *args, n_runs=3, **kwargs):
     """Time func, return median of n_runs"""
-    times = []
-    
+    times = []    
     for _ in range(n_runs):
         t0 = time.perf_counter()
         result = func(*args)
@@ -127,24 +127,27 @@ if __name__ == "__main__":
     resolution_1 = (64, 64)
     resolution_2 = (1024, 1024)
 
+    # Compare naive, numpy and numba
     # Warm up: First computation doesnt count
-    _ = compute_mandelbrot_hybrid(x_dim=x_dim, y_dim=y_dim, res=resolution_1)
     _ = compute_mandelbrot_full(x_dim=x_dim, y_dim=y_dim, res=resolution_1)
 
     # Benchmark and plots of numba approach
-    t_hybrid, _ = benchmark(compute_mandelbrot_hybrid, x_dim, y_dim, resolution_2, n_runs=iterations)
-    t_full, _ = benchmark(compute_mandelbrot_full, x_dim, y_dim, resolution_2, n_runs=iterations)
+    t_naive, _ = benchmark(compute_mandelbrot_naive, x_dim, y_dim, resolution_2, n_runs=iterations)
+    t_numpy, _ = benchmark(compute_mandelbrot_numpy, x_dim, y_dim, resolution_2, n_runs=iterations)
+    t_numba, _ = benchmark(compute_mandelbrot_full, x_dim, y_dim, resolution_2, n_runs=iterations)
 
-    print(f'Hybrid: {t_hybrid:.3f} seconds')
-    print(f'Full: {t_full:.3f} seconds')
-    print(f'Ratio: {t_hybrid/t_full:.1f}x')
+    print(f'Naive: {t_naive:.3f} seconds')
+    print(f'Numpy: {t_numpy:.3f} seconds. Ratio: ({t_naive/t_numpy})x')
+    print(f'Numba: {t_numba:.3f} seconds. Ratio: ({t_naive/t_numba})x')
 
     """
-    Results:
-    Hybrid: 2.130 seconds
-    Full: 0.072 seconds
-    Ratio: 29.7x
+    Result:
+    Naive: 7.626 seconds
+    Numpy: 1.521 seconds. Ratio: (5.013941790602197)
+    Numba: 0.071 seconds. Ratio: (107.99103203465971)
     """
+
+
 
     
     

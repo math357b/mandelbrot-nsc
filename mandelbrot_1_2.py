@@ -34,14 +34,14 @@ def mandelbrot_point_naive(c):
     return max_iter 
 
 # Lecture 1 - Naive Implementation        
-def compute_mandelbrot_naive(x_dim = tuple[float, float],
-                             y_dim = tuple[float, float],
-                             res_x = int,
-                             res_y = int):
+def compute_mandelbrot_naive(x_dim: tuple[float, float],
+                             y_dim: tuple[float, float],
+                             res: tuple[int, int]):
     
     # Pulling out variables from tuples
     x_min, x_max = x_dim
     y_min, y_max = y_dim
+    res_x, res_y = res
 
     # Create 1D arrays
     x = np.linspace(x_min, x_max, res_x)
@@ -57,14 +57,14 @@ def compute_mandelbrot_naive(x_dim = tuple[float, float],
     return all_n
 
 # Lecture 2 - Numpy Implementation
-def compute_mandelbrot_vectorized(x_dim = tuple[float, float],
-                                  y_dim = tuple[float, float],
-                                  res_x = int,
-                                  res_y = int):
+def compute_mandelbrot_numpy(x_dim: tuple[float, float],
+                             y_dim: tuple[float, float],
+                             res: tuple[int, int]):
     
     # Pulling out variables from tuples
     x_min, x_max = x_dim
     y_min, y_max = y_dim
+    res_x, res_y = res
     
     # Parameters
     iter = 100
@@ -116,9 +116,9 @@ if __name__ == "__main__":
     time_plot = []
 
     for i in res_list:
-        elapsed_vectorized_grid, _ = benchmark(compute_mandelbrot_vectorized, x_dim, y_dim, i, i)
-        time_plot.append(elapsed_vectorized_grid)
-        print(f'Compute runtime for resolution{[i]}. Computation took {elapsed_vectorized_grid}')
+        elapsed_numpy_grid, _ = benchmark(compute_mandelbrot_numpy, x_dim, y_dim, i, i)
+        time_plot.append(elapsed_numpy_grid)
+        print(f'Compute runtime for resolution{[i]}. Computation took {elapsed_numpy_grid}')
 
     plt.figure()
     plt.plot(res_list, time_plot)
@@ -161,13 +161,13 @@ if __name__ == "__main__":
     """
 
     """
-    # Benchmark and plots of vectorized approach
-    t_vectorized, M_vectorized = benchmark(compute_mandelbrot_vectorized, x_dim, y_dim, resolution, n_runs=iterations)
-    print(f'Computing naive approach took {t_vectorized} seconds')
-    plt.imshow(M_vectorized, cmap='hot')
+    # Benchmark and plots of numpy approach
+    t_numpy, M_numpy = benchmark(compute_mandelbrot_numpy, x_dim, y_dim, resolution, n_runs=iterations)
+    print(f'Computing naive approach took {t_numpy} seconds')
+    plt.imshow(M_numpy, cmap='hot')
     plt.title('Mandelbrot Set Figure L2')
     plt.colorbar()
-    plt.savefig("mandelbrot_vectorized.png")
+    plt.savefig("mandelbrot_numpy.png")
     plt.show()
     plt.close()
     """
