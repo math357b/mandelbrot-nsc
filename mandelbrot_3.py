@@ -3,7 +3,7 @@ Mandelbrot Set Generator
 Author : [ Mathias Jørgensen ]
 Course : Numerical Scientific Computing 2026
 """
-import numpy as np
+import numpy as np, time
 import matplotlib.pyplot as plt
 import time, statistics
 import cProfile, pstats
@@ -117,6 +117,29 @@ def compute_mandelbrot_full(x_dim: tuple[float, float],
             result[i, j] = n
     return result
 
+@njit
+def mandelbrot_numba_typed(x_dim: tuple[float, float],
+                           y_dim: tuple[float, float],
+                           res: tuple[float, float],
+                           max_iter=100, 
+                           dtype=np.float64):
+    
+    # Pulling out variables from tuples
+    x_min, x_max = x_dim
+    y_min, y_max = y_dim
+    res_x, res_y = res
+
+    # Create 1D arrays
+    x = np.linspace(x_min, x_max, res_x).astype(dtype)
+    y = np.linspace(y_min, y_max, res_y).astype(dtype)
+    result = np.zeros((res_y, res_x), dtype=np.int32)
+
+    for i in range(res_y):
+        for j in range(res_x):
+            c = x[i] + 1j * y[j]
+            result[i, j] = mandelbrot_point_numba(c, max_iter)
+    return result
+
 
 if __name__ == "__main__":
 
@@ -127,25 +150,34 @@ if __name__ == "__main__":
     resolution_1 = (64, 64)
     resolution_2 = (1024, 1024)
 
-    # Compare naive, numpy and numba
-    # Warm up: First computation doesnt count
-    _ = compute_mandelbrot_full(x_dim=x_dim, y_dim=y_dim, res=resolution_1)
+    for dtype in [np.float32, np.float64]:
+        t0 = time.perf_counter()
+        mandelbrot_numba_typed(x_dim, y_dim, resolution_2, dtype=dtype)
+        print(f'{dtype.__name__}: {time.perf_counter()-t0:.3f}s')
 
-    # Benchmark and plots of numba approach
-    t_naive, _ = benchmark(compute_mandelbrot_naive, x_dim, y_dim, resolution_2, n_runs=iterations)
-    t_numpy, _ = benchmark(compute_mandelbrot_numpy, x_dim, y_dim, resolution_2, n_runs=iterations)
-    t_numba, _ = benchmark(compute_mandelbrot_full, x_dim, y_dim, resolution_2, n_runs=iterations)
+    r32 = mandelbrot_numba_typed(x_dim, y_dim, resolution_2, dtype=np.float32)
+    r64 = mandelbrot_numba_typed(x_dim, y_dim, resolution_2, dtype=np.float64)
 
-    print(f'Naive: {t_naive:.3f} seconds')
-    print(f'Numpy: {t_numpy:.3f} seconds. Ratio: ({t_naive/t_numpy})x')
-    print(f'Numba: {t_numba:.3f} seconds. Ratio: ({t_naive/t_numba})x')
+    fig, axes = plt.subplots(1, 2, figsize=(12,4))
+    for ax, result, title in zip(axes, [r32, r64], ['float32', 'float64 (ref)']):
+        ax.imshow(result, cmap='hot')
+        ax.set_title(title)
+        ax.axis('off')
 
+    plt.savefig('precision_comparison.png', dpi=150)
+
+    print(f'Max diff float32 vs float64: {np.abs(r32-r64).max()}')
+    
     """
-    Result:
-    Naive: 7.626 seconds
-    Numpy: 1.521 seconds. Ratio: (5.013941790602197)
-    Numba: 0.071 seconds. Ratio: (107.99103203465971)
+    Results:
+    float32: 1.477s
+    float64: 0.317s
+    Max diff float32 vs float64: 33
     """
+
+    
+
+
 
 
 
