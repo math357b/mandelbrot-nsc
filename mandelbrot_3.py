@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import time, statistics
 import cProfile, pstats
 from line_profiler import profile
-from numba import jit, njit, int32, complex128
+from numba import jit, njit, prange int32, complex128
 from mandelbrot_1_2 import compute_mandelbrot_naive, compute_mandelbrot_numpy
 
 def benchmark(func, *args, n_runs=3, **kwargs):
@@ -117,6 +117,7 @@ def compute_mandelbrot_full(x_dim: tuple[float, float],
             result[i, j] = n
     return result
 
+# Lecture 3 - 
 @njit
 def mandelbrot_numba_typed(x_dim: tuple[float, float],
                            y_dim: tuple[float, float],
@@ -140,40 +141,40 @@ def mandelbrot_numba_typed(x_dim: tuple[float, float],
             result[i, j] = mandelbrot_point_numba(c, max_iter)
     return result
 
+# Lecture 3 - Parallel Numba optimization
+@njit(parallel=True)
+def compute_mandelbrot_numba_parallel(x_dim: tuple[float, float],
+                                      y_dim: tuple[float, float],
+                                      res: tuple[int, int],
+                                      max_iter: np.int32 = 100):
+    
+    # Pulling out variables from tuples
+    x_min, x_max = x_dim
+    y_min, y_max = y_dim
+    res_x, res_y = res
+
+    # Create 1D arrays
+    x = np.linspace(x_min, x_max, res_x)
+    y = np.linspace(y_min, y_max, res_y)
+
+    #create array for n
+    result = np.zeros((res_x, res_y), dtype=np.int32)
+
+    for i in prange(res_y):
+        for j in range(res_x):
+            c = x[i] + 1j * y[j]
+            z = 0j
+            n = 0
+            while n < max_iter and z.real*z.real + z.imag*z.imag <= 4.0:
+                z = z*z + c
+                n += 1
+            result[i, j] = n
+    return result
 
 if __name__ == "__main__":
+    print("Hej")
 
-    # Parameters
-    iterations = 3
-    x_dim = (-2, 1)
-    y_dim = (-1.5, 1.5)
-    resolution_1 = (64, 64)
-    resolution_2 = (1024, 1024)
 
-    for dtype in [np.float32, np.float64]:
-        t0 = time.perf_counter()
-        mandelbrot_numba_typed(x_dim, y_dim, resolution_2, dtype=dtype)
-        print(f'{dtype.__name__}: {time.perf_counter()-t0:.3f}s')
-
-    r32 = mandelbrot_numba_typed(x_dim, y_dim, resolution_2, dtype=np.float32)
-    r64 = mandelbrot_numba_typed(x_dim, y_dim, resolution_2, dtype=np.float64)
-
-    fig, axes = plt.subplots(1, 2, figsize=(12,4))
-    for ax, result, title in zip(axes, [r32, r64], ['float32', 'float64 (ref)']):
-        ax.imshow(result, cmap='hot')
-        ax.set_title(title)
-        ax.axis('off')
-
-    plt.savefig('precision_comparison.png', dpi=150)
-
-    print(f'Max diff float32 vs float64: {np.abs(r32-r64).max()}')
-    
-    """
-    Results:
-    float32: 1.477s
-    float64: 0.317s
-    Max diff float32 vs float64: 33
-    """
 
     
 
