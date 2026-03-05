@@ -30,10 +30,19 @@ def estimate_pi_parallel(num_samples: int,
 if __name__ == '__main__':
     num_samples = 10_000_000
     for num_proc in range(1, os.cpu_count() + 1):
-        times = []
+        times_serial = []
+        times_parallel = []
         for _ in range(3):
-            t0 = time.perf_counter()
-            pi_estimate = estimate_pi_parallel(num_samples=num_samples, num_processes=num_proc)
-            times.append(time.perf_counter() - t0)
-        t_parallel = statistics.median(times)
-        print(f"{num_proc:2d} workers: {t_parallel:.3f}s, pi={pi_estimate:.6f}")
+            t0_serial = time.perf_counter()
+            pi_est_serial = estimate_pi_serial(num_samples=num_samples)
+            times_serial.append(time.perf_counter() - t0_serial)
+            t0_parallel = time.perf_counter()
+            pi_est_parallel = estimate_pi_parallel(num_samples=num_samples, num_processes=num_proc)
+            times_parallel.append(time.perf_counter() - t0_parallel)
+        t_serial = statistics.median(times_serial)
+        t_parallel = statistics.median(times_parallel)
+
+        speedup = t_serial/t_parallel
+        efficiency = speedup/num_proc
+
+        print(f"workers: {num_proc} | time: {t_parallel:.3f}(s) | speedup: {speedup:.3f}x | efficiency: {efficiency:.3f}")
