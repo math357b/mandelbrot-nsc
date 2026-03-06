@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import time, statistics
 import cProfile, pstats
 from line_profiler import profile
-from numba import jit, njit, prange int32, complex128
+from numba import jit, njit, prange
 from mandelbrot_1_2 import compute_mandelbrot_naive, compute_mandelbrot_numpy
 
 def benchmark(func, *args, n_runs=3, **kwargs):
@@ -19,7 +19,8 @@ def benchmark(func, *args, n_runs=3, **kwargs):
         result = func(*args)
         times.append(time.perf_counter() - t0)
     median_t = statistics.median(times)
-    print(f'Median: {median_t:.4f}s'
+    print(f'{func.__name__}: '
+          f'Median: {median_t:.4f}s'
           f'(min={min(times):.4f}, max={max(times):.4f})')
     return median_t, result
 
@@ -143,7 +144,19 @@ def mandelbrot_numba_typed(x_dim: tuple[float, float],
 
 
 if __name__ == "__main__":
+    # Parameters
+    iterations = 100
+    N = 1024
+    x_dim = (-2, 1)
+    y_dim = (-1.5, 1.5)
+    resolution_1 = (64, 64)
+    resolution_2 = (1024, 1024)
 
+    # Warm up: First computation doesnt count
+    _ = compute_mandelbrot_full(x_dim=x_dim, y_dim=y_dim, res=resolution_1)
+
+    # Benchmark and plots of numba approach
+    t_full, _ = benchmark(compute_mandelbrot_full, x_dim, y_dim, resolution_2, n_runs=iterations)
 
 
 
