@@ -1,0 +1,5 @@
+*.prof
+*.lprof
+__pycache__/
+*.zip
+*.png
