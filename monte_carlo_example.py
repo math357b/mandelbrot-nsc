@@ -28,11 +28,12 @@ def estimate_pi_parallel(num_samples: int,
         results = pool.map(estimate_pi_chunk, tasks)
     return 4 * sum(results) / num_samples
 
-def plot_worker_speedup(workers: int,
+def plot_worker_speedup(title: str,
+                        workers: int,
                         speedup: float):
     plt.figure()
     plt.plot(workers, speedup, marker='o')
-    plt.title("Worker vs. Speedup")
+    plt.title(f"{title}: Worker vs. Speedup")
     plt.xlabel("Number of worker processes")
     plt.ylabel("Speedup (relative to serial)")
     plt.show()
@@ -72,5 +73,5 @@ if __name__ == '__main__':
               f"speedup: {speedup:.3f}x | "
               f"efficiency: {efficiency:.3f}")
         
-    plot_worker_speedup(workers=workers_list, speedup=speedups)
-    plt.savefig("figures/worker_speedup.png")
+    plot_worker_speedup(title="Monte Carlo", workers=workers_list, speedup=speedups)
+    plt.savefig("figures/Monte_Carlo_worker_speedup.png")
