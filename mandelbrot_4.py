@@ -24,12 +24,13 @@ def mandelbrot_pixel(c_real,
 def mandelbrot_chunk(row_start: int,
                      row_end: int,
                      N: int,
-                     x_min: float,
-                     x_max: float,
-                     y_min: float,
-                     y_max: float,
+                     x_dim: tuple[float, float],
+                     y_dim: tuple[float, float],
                      max_iter: int):
     
+    x_min, x_max = x_dim
+    y_min, y_max = y_dim
+
     out = np.empty((row_end - row_start, N), dtype=np.int32)
     dx = (x_max - x_min) / N
     dy = (y_max - y_min) / N
@@ -40,20 +41,18 @@ def mandelbrot_chunk(row_start: int,
     return out
 
 def mandelbrot_serial(N: int,
-                      x_min: float,
-                      x_max: float,
-                      y_min: float,
-                      y_max: float,
+                      x_dim: tuple[float, float],
+                      y_dim: tuple[float, float],
                       max_iter=100):
 
-    return mandelbrot_chunk(row_start=0, row_end=N, N=N, x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max, max_iter=max_iter)
+    return mandelbrot_chunk(row_start=0, row_end=N, N=N, x_dim=x_dim, y_dim=y_dim, max_iter=max_iter)
 
 def _worker(args):
     return mandelbrot_chunk(*args)
 
 def mandelbrot_parallel(N: int,
-                        x_min, x_max: float,
-                        y_min, y_max: float,
+                        x_dim: tuple[float, float],
+                        y_dim: tuple[float, float],
                         max_iter: int = 100,
                         num_workers: int = 4):
 
@@ -62,7 +61,7 @@ def mandelbrot_parallel(N: int,
     row = 0
     while row < N:
         row_end = min(row + chunk_size, N) # determine end of the row
-        chunks.append((row, row_end, N, x_min, x_max, y_min, y_max, max_iter))
+        chunks.append((row, row_end, N, x_dim, y_dim, max_iter))
         row = row_end
 
     with Pool(processes=num_workers) as pool:
@@ -72,29 +71,30 @@ def mandelbrot_parallel(N: int,
     return np.vstack(parts)
 
 if __name__ == "__main__":
-    """
+    
     # Parameters
     N = 1024
-    x_min, x_max = -2.5, 1.0
-    y_min, y_max = -1.25, 1.25
+    x_dim = (-2.5, 1.0)
+    y_dim = (-1.25, 1.25)
     num_workers = 4
 
     # Milestone 2 testing:
-    result = mandelbrot_parallel(N=N, x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max, num_workers=num_workers)
-    
+    result = mandelbrot_parallel(N=N, x_dim=x_dim, y_dim=y_dim, num_workers=num_workers)
+
     fig, ax = plt.subplots(figsize=(8,6))
-    ax.imshow(result, extent=[x_min, x_max, y_min, y_max], cmap='inferno', origin='lower', aspect='equal')
+    ax.imshow(result, extent=[x_dim[0], x_dim[1], y_dim[0], y_dim[1]], cmap='inferno', origin='lower', aspect='equal')
     ax.set_xlabel('Re(c)')
     ax.set_ylabel('Im(c)')
-    out = Path(__file__).parent / 'mandelbrot.png'
+    out = Path(__file__).parent / 'figures/mandelbrot_parallel.png'
     fig.savefig(out, dpi=150)
     print(f'Saved: {out}')
-    """
+    
 
+    """
     # Parameters
     N = 1024
-    x_min, x_max = -2.5, 1.0
-    y_min, y_max = -1.25, 1.25
+    x_dim = (-2.5, 1.0)
+    y_dim = (-1.25, 1.25)
     max_iter = 100
     num_runs = 3
 
@@ -105,7 +105,7 @@ if __name__ == "__main__":
     times = []
     for _ in range(num_runs):
         start_time = time.perf_counter()
-        mandelbrot_serial(N=N, x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max, max_iter=max_iter)
+        mandelbrot_serial(N=N, x_dim=x_dim, y_dim=y_dim, max_iter=max_iter)
         times.append(time.perf_counter() - start_time)
     t_serial = statistics.median(times)
 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
         row = 0
         while row < N:
             row_end = min(row + chunk_size, N) # determine end of the row
-            chunks.append((row, row_end, N, x_min, x_max, y_min, y_max, max_iter))
+            chunks.append((row, row_end, N, x_dim, y_dim, max_iter))
             row = row_end
 
         with Pool(processes=num_workers) as pool:
@@ -134,12 +134,13 @@ if __name__ == "__main__":
 
         # print table of workers, speedup and efficiency
         print(f'{num_workers:2d} workers | '
-              f'parallel time: {t_parallel:.2f}s | '
+              f'parallel time: {t_parallel:.4f}s | '
               f'speedup: {speedup:.2f}x | '
               f'efficiency: {speedup/num_workers:.2f}')
     
     # Plot worker vs. speedup
     plot_worker_speedup(title="Mandelbrot", workers=workers_list, speedup=speedups)
     plt.savefig("figures/Mandelbrot_worker_speedup.png")
+    """
         
         

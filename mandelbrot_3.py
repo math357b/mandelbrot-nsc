@@ -105,11 +105,11 @@ def compute_mandelbrot_full(x_dim: tuple[float, float],
     y = np.linspace(y_min, y_max, res_y)
 
     #create array for n
-    result = np.zeros((res_x, res_y), dtype=np.int32)
+    result = np.zeros((res_y, res_x), dtype=np.int32)
 
     for i in range(res_y):
         for j in range(res_x):
-            c = x[i] + 1j * y[j]
+            c = x[j] + 1j * y[i]
             z = 0j
             n = 0
             while n < max_iter and z.real*z.real + z.imag*z.imag <= 4.0:
@@ -157,6 +157,15 @@ if __name__ == "__main__":
 
     # Benchmark and plots of numba approach
     t_full, _ = benchmark(compute_mandelbrot_full, x_dim, y_dim, resolution_2, n_runs=iterations)
+
+    result_numba = compute_mandelbrot_full(x_dim=x_dim, y_dim=y_dim, res=resolution_2, max_iter=iterations)
+
+    fig, ax = plt.subplots(figsize=(8,6))
+    ax.imshow(result_numba, extent=[x_dim[0], x_dim[1], y_dim[0], y_dim[1]], cmap='inferno', origin='lower', aspect='equal')
+    ax.set_title(' Serial Mandelbrot')
+    ax.set_xlabel('Re(c)')
+    ax.set_ylabel('Im(c)')
+    plt.show()
 
 
 
