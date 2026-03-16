@@ -1,5 +1,6 @@
 from multiprocessing import Pool
 import random, time, os
+from functools import reduce
 
 def monte_carlo_chunk(num_samples):
     """Estimate pi contributions for num_samples random points."""
@@ -25,9 +26,12 @@ def test_granularity(total_work, chunk_size, n_proc):
 
     return end_time, results
 
+def subtract_seven(x):
+    return x - 7
+
 if __name__ == '__main__':
     
-    # Parameters:
+    # E1 - Lecture 5
     total_work = 1_000_000
     n_proc = os.cpu_count() // 2
     chunk_sizes = [10, 100, 1_000, 10_000, 100_000, 1_000_000] 
@@ -36,3 +40,27 @@ if __name__ == '__main__':
         t_serial, _ = test_granularity(total_work=total_work, chunk_size=L, n_proc=1)
         t_parallel, pi = test_granularity(total_work=total_work, chunk_size=L, n_proc=n_proc)
         print(f'{L:12d} | {t_serial:12.4f} | {t_parallel:12.4f}  pi={pi:.4f}')
+
+    # E2 - Lecture 5
+    N = 1_000_000
+    data = [random.randint(10, 100) for _ in range(N)]
+
+    # Part 1 - serial pipeline (map / filter / reduced chained)
+    t0 = time.perf_counter()
+    result_serial = reduce(lambda a, b: a + b,
+                           filter(lambda x: x % 2 == 1,
+                                  map(subtract_seven, data)))
+    t_serial = time.perf_counter() - t0
+
+    # Part 2 - replace map() with Pool.map
+    t0 = time.perf_counter()
+    with Pool() as pool:
+        mapped = pool.map(subtract_seven, data)
+    result_parallel = reduce(lambda a, b: a + b,
+                           filter(lambda x: x % 2 == 1, mapped))
+    t_parallel = time.perf_counter() - t0
+
+    print(f'Serial:   {t_serial:.4f}s | Result={result_serial}')
+    print(f'Parallel: {t_parallel:.4f}s | Results={result_parallel}')
+    print(f'Speedup:  {t_serial / t_parallel:.4f}x')
+    
