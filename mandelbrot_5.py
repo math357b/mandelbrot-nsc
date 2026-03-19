@@ -143,6 +143,9 @@ if __name__ == "__main__":
     axes[1].set_xlabel('Re(c)')
     axes[1].set_ylabel('Im(c)')
     plt.show()
+
+    # Milestone 2
+    
     
         
         
