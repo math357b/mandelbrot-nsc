@@ -23,15 +23,7 @@ def mandelbrot_dask(N: int,
 
     return np.vstack(parts)
 
-if __name__ == '__main__':
-    from mandelbrot_5 import mandelbrot_chunk
-    from mandelbrot_6 import mandelbrot_dask
-    from mandelbrot_1_2 import compute_mandelbrot_naive
-    from mandelbrot_4 import compute_mandelbrot_full
-    from dask import delayed
-    from dask.distributed import Client, LocalCluster
-    import dask, time, statistics
-    
+if __name__ == '__main__':  
     N = 1024
     res = (N, N)
     max_iter = 100
@@ -52,12 +44,12 @@ if __name__ == '__main__':
     client.close()
     #cluster.close()
     
-    times = []
-    for _ in range(n_runs):
-        t0 = time.perf_counter()
-        compute_mandelbrot_naive(x_dim=x_dim, y_dim=y_dim, res=res)
-        times.append(time.perf_counter() - t0)
-        time_naive = statistics.median(times)
-    print(f'Naive: {time_naive} s')
-    print(f"Speedup: {time_naive/time_dask:.3f} x")
+    # times = []
+    # for _ in range(n_runs):
+    #     t0 = time.perf_counter()
+    #     compute_mandelbrot_naive(x_dim=x_dim, y_dim=y_dim, res=res)
+    #     times.append(time.perf_counter() - t0)
+    #     time_naive = statistics.median(times)
+    # print(f'Naive: {time_naive} s')
+    # print(f"Speedup: {time_naive/time_dask:.3f} x")
 
