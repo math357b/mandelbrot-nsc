@@ -31,7 +31,7 @@ if __name__ == '__main__':
     
     x_dim = (-2.5, 1.0)
     y_dim = (-1.25, 1.25)
-    client = Client("tcp://10.92.0.214:8786")
+    client = Client("tcp://10.92.1.30:8786")
     client.run(lambda: mandelbrot_chunk(row_start=0, row_end=8, N=8, x_dim=x_dim, y_dim=y_dim, max_iter=max_iter))
 
     times = []
