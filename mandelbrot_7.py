@@ -2,6 +2,8 @@ from dask import delayed
 from dask.distributed import Client, LocalCluster
 import dask, time, statistics
 import numpy as np
+import matplotlib.pyplot as plt
+from mandelbrot_3 import compute_mandelbrot_full
 from mandelbrot_5 import mandelbrot_chunk
 
 def mandelbrot_dask(N: int,
@@ -24,32 +26,85 @@ def mandelbrot_dask(N: int,
     return np.vstack(parts)
 
 if __name__ == '__main__':  
-    N = 1024
-    res = (N, N)
-    max_iter = 100
+
+    # Parameters
+    resolutions = [1024, 2048, 4096, 8192]
+    iterations = 100
     n_runs = 3
-    
     x_dim = (-2.5, 1.0)
     y_dim = (-1.25, 1.25)
+    chunk_values = [1, 2, 4, 8, 16, 32, 64, 128]
+
     client = Client("tcp://10.92.1.30:8786")
-    client.run(lambda: mandelbrot_chunk(row_start=0, row_end=8, N=8, x_dim=x_dim, y_dim=y_dim, max_iter=max_iter))
 
-    times = []
-    for _ in range(n_runs):
-        t0 = time.perf_counter()
-        mandelbrot_dask(N=N, x_dim=x_dim, y_dim=y_dim, max_iter=max_iter)
-        times.append(time.perf_counter() - t0)
-        time_dask = statistics.median(times)
-    print(f"Dask local (n_chunks=32): {time_dask:.3f} s")
+    # Warmup
+    client.run(lambda: mandelbrot_chunk(row_start=0, row_end=8, N=8, x_dim=x_dim, y_dim=y_dim, max_iter=iterations))
+    _ = compute_mandelbrot_full(x_dim=x_dim, y_dim=y_dim, res=(64,64))  # Numba warmup
+
+    # Store speedups vs resolution
+    speedups = []
+
+    # Compute time for Numba and Dask distributed for different resolutions
+    for N in resolutions:
+        res = (N, N)
+
+        # Numba serial baseline
+        numba_times = []
+        for _ in range(n_runs):
+            t0 = time.perf_counter()
+            compute_mandelbrot_full(x_dim=x_dim, y_dim=y_dim, res=res, max_iter=iterations)
+            numba_times.append(time.perf_counter() - t0)
+        t_numba = statistics.median(numba_times)
+
+        # Dask distributed: sweep chunk sizes
+        wall_times = []
+        for n_chunks in chunk_values:
+            dask_times = []
+            for _ in range(n_runs):
+                t0 = time.perf_counter()
+                mandelbrot_dask(N, x_dim, y_dim, max_iter=iterations, n_chunks=n_chunks)
+                dask_times.append(time.perf_counter() - t0)
+            median_time = statistics.median(dask_times)
+            wall_times.append((n_chunks, median_time))
+
+        # Determine best chunk size
+        wall_times_array = np.array(wall_times)
+        optimal_idx = np.argmin(wall_times_array[:,1])
+        n_optimal = int(wall_times_array[optimal_idx,0])
+        t_dask_best = wall_times_array[optimal_idx,1]
+
+        # Overall speedup
+        speedup = t_numba / t_dask_best
+        speedups.append((N, t_numba, t_dask_best, speedup))
+
+        # Print results
+        print(f"\nResolution N={N}")
+        print(f"Numba serial: {t_numba:.2f}s")
+        print(f"Dask best chunk={n_optimal}: {t_dask_best:.2f}s | Speedup={speedup:.2f}x")
+        print("Wall time vs chunks:")
+        for nc, wt in wall_times:
+            print(f"Chunks: {nc:3d} | Time: {wt:.2f}s")
+
+        # Plot wall time vs chunk size
+        plt.figure()
+        plt.plot(wall_times_array[:,0], wall_times_array[:,1], marker='o')
+        plt.xscale('log', base=2)
+        plt.xlabel("Number of chunks")
+        plt.ylabel("Wall time (s)")
+        plt.title(f"Wall time vs chunk count (N={N})")
+        plt.grid(True)
+        plt.savefig(f"mandelbrot_walltime_N{N}.png")
+        plt.close()
+
     client.close()
-    #cluster.close()
-    
-    # times = []
-    # for _ in range(n_runs):
-    #     t0 = time.perf_counter()
-    #     compute_mandelbrot_naive(x_dim=x_dim, y_dim=y_dim, res=res)
-    #     times.append(time.perf_counter() - t0)
-    #     time_naive = statistics.median(times)
-    # print(f'Naive: {time_naive} s')
-    # print(f"Speedup: {time_naive/time_dask:.3f} x")
 
+    # Plot speedup vs resolution
+    speedups_array = np.array(speedups)
+    plt.figure()
+    plt.plot(speedups_array[:,0], speedups_array[:,3], marker='o')
+    plt.xlabel("Resolution N")
+    plt.ylabel("Speedup (Numba / Dask)")
+    plt.title("Dask distributed speedup over Numba serial")
+    plt.grid(True)
+    plt.savefig("mandelbrot_speedup_vs_resolution.png")
+    plt.close()
