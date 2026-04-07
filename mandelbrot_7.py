@@ -166,6 +166,7 @@ def experiment_2():
 
         # Print results
         print(f"\nResolution N={N}")
+        print(f"Optimal n_chunk: {n_chunks}")
         print(f"Numba time: {t_numba:.2f}s")
         print(f"Dask time:  {t_dask:.2f}s")
         print(f"Speedup:    {speedup:.2f}x")
