@@ -173,5 +173,5 @@ def experiment_2():
     client.close()
 
 if __name__ == '__main__':  
-    experiment_1()
+    #experiment_1()
     experiment_2()
