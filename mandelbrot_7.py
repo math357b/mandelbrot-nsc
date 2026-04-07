@@ -25,8 +25,7 @@ def mandelbrot_dask(N: int,
 
     return np.vstack(parts)
 
-if __name__ == '__main__':  
-
+def experiment_1():
     # Parameters
     resolutions = [1024, 2048, 4096, 8192]
     iterations = 100
@@ -114,3 +113,65 @@ if __name__ == '__main__':
     plt.grid(True)
     plt.savefig("mandelbrot_speedup_vs_resolution.png")
     plt.close()
+
+def experiment_2():
+    # Parameters
+    resolutions = [1024, 2048, 4096, 8192]
+    iterations = 100
+    n_runs = 3
+    x_dim = (-2.5, 1.0)
+    y_dim = (-1.25, 1.25)
+    optimal_chunks = {
+    1024: 2,
+    2048: 2,
+    4096: 2,
+    8192: 4}
+
+    client = Client("tcp://10.92.1.30:8786")
+
+    n_workers = len(client.scheduler_info()['workers'])
+    threads_per_worker = [w['nthreads'] for w in client.scheduler_info()['workers'].values()]
+
+    print(f"Number of workers: {n_workers}")
+    print(f"Threads per worker: {threads_per_worker}")
+    
+    # Warmup
+    client.run(lambda: mandelbrot_chunk(row_start=0, row_end=8, N=8, x_dim=x_dim, y_dim=y_dim, max_iter=iterations))
+    _ = compute_mandelbrot_full(x_dim=x_dim, y_dim=y_dim, res=(64,64))  # Numba warmup
+
+    # Compute time for Numba and Dask distributed for different resolutions
+    for N in resolutions:
+        res = (N, N)
+
+        # Numba serial baseline
+        numba_times = []
+        for _ in range(n_runs):
+            t0 = time.perf_counter()
+            compute_mandelbrot_full(x_dim=x_dim, y_dim=y_dim, res=res, max_iter=iterations)
+            numba_times.append(time.perf_counter() - t0)
+        t_numba = statistics.median(numba_times)
+
+        # Dask distributed: sweep chunk sizes
+        dask_times = []
+        n_chunks = optimal_chunks[N]
+
+        for _ in range(n_runs):
+            t0 = time.perf_counter()
+            mandelbrot_dask(N, x_dim, y_dim, max_iter=iterations, n_chunks=n_chunks)
+            dask_times.append(time.perf_counter() - t0)
+        t_dask = statistics.median(dask_times)
+
+        # Speedup
+        speedup = t_numba / t_dask
+
+        # Print results
+        print(f"\nResolution N={N}")
+        print(f"Numba time: {t_numba:.2f}s")
+        print(f"Dask time:  {t_dask:.2f}s")
+        print(f"Speedup:    {speedup:.2f}x")
+
+    client.close()
+
+if __name__ == '__main__':  
+    experiment_1()
+    experiment_2()
