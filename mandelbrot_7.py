@@ -37,6 +37,12 @@ if __name__ == '__main__':
 
     client = Client("tcp://10.92.1.30:8786")
 
+    n_workers = len(client.scheduler_info()['workers'])
+    threads_per_worker = [w['nthreads'] for w in client.scheduler_info()['workers'].values()]
+
+    print(f"Number of workers: {n_workers}")
+    print(f"Threads per worker: {threads_per_worker}")
+    
     # Warmup
     client.run(lambda: mandelbrot_chunk(row_start=0, row_end=8, N=8, x_dim=x_dim, y_dim=y_dim, max_iter=iterations))
     _ = compute_mandelbrot_full(x_dim=x_dim, y_dim=y_dim, res=(64,64))  # Numba warmup
