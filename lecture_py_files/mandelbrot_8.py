@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 
 def mandelbrot_trajectory_divergence(N: int,
                                      x_dim: tuple[float, float],
@@ -52,31 +53,74 @@ def mandelbrot_escape_count(N: int,
 
     return escape
 
+def mandelbrot_sensitivity_map(N: int,
+                               max_iter: int,
+                               x_dim: tuple[float, float],
+                               y_dim: tuple[float, float]):
+    
+    x = np.linspace(x_dim[0], x_dim[1], N)
+    y = np.linspace(y_dim[0], y_dim[1], N)
+
+    C = (x[np.newaxis, :] +  1j * y[:, np.newaxis]).astype(np.complex128)
+    eps32 = float(np.finfo(np.float32).eps)
+    delta = np.maximum(eps32 / np.abs(C), 1e-10)
+
+    def escape_count(C, max_iter):
+        z = np.zeros_like(C)
+        cnt = np.full(C.shape, max_iter, dtype=np.int32)
+        esc = np.zeros(C.shape, dtype=bool)
+        for k in range(max_iter):
+            z[~esc] = z[~esc]**2 + C[~esc]
+            newly = ~esc & (np.abs(z) > 2.0)
+            cnt[newly] = k
+            esc[newly] = True
+        return cnt
+    
+    n_base = escape_count(C=C, max_iter=max_iter).astype(float)
+    print(f'{n_base=}')
+    n_perturb = escape_count(C=C+delta, max_iter=max_iter).astype(float)
+    dn = np.abs(n_base - n_perturb)
+    kappa = np.where(n_base > 0, dn / (eps32 * n_base), np.nan)
+    cmap_k = plt.cm.hot.copy()
+    cmap_k.set_bad('0.25')
+    
+    vmax = np.nanpercentile(kappa, 99)
+
+    plt.figure()
+    plt.imshow(n_perturb, cmap='plasma', origin='lower',
+            extent=[x_dim[0], x_dim[1], y_dim[0], y_dim[1]],
+            norm=LogNorm(vmin=1, vmax=vmax))
+    plt.colorbar(label=r'$\kappa(c)$ (log scale, $\kappa \geq 1$)')
+    plt.title(r'Condition number approx $\kappa(c) = |\Delta n|\,/\,(\varepsilon_{32}\,n(c))$')
+    plt.show()
+
 if __name__ == '__main__':
 
     N = 512
-    x_dim = (-0.7530, -0.7490)
-    y_dim = (0.0990, 0.1030)
-    #x_dim = (-2.5, 1.0)
-    #y_dim = (-1.5, 1.5)
+    #x_dim = (-0.7530, -0.7490)
+    #y_dim = (0.0990, 0.1030)
+    x_dim = (-2.5, 1.0)
+    y_dim = (-1.5, 1.5)
+
     max_iter = 1000
     tau = 0.01
+
+    mandelbrot_sensitivity_map(N, max_iter, x_dim, y_dim)
+    exit()
 
     diverge = mandelbrot_trajectory_divergence(N=N, x_dim=x_dim, y_dim=y_dim, max_iter=max_iter, tau=tau)
     escape = mandelbrot_escape_count(N=N, x_dim=x_dim, y_dim=y_dim, max_iter=max_iter)
 
     plt.figure()
-
     plt.subplot(1, 2, 1)
     plt.imshow(diverge, cmap='plasma', origin='lower', extent=[x_dim[0], x_dim[1], y_dim[0], y_dim[1]])
     plt.colorbar(label='First divergence iteration')
     plt.title(f'Trajectory divergence (tau={tau})')
-
     plt.subplot(1, 2, 2)
     plt.imshow(escape, cmap='viridis', origin='lower', extent=[x_dim[0], x_dim[1], y_dim[0], y_dim[1]])
     plt.colorbar(label='Escape iteration')
     plt.title(f'Escape iteration count')
+    plt.close()
 
-    plt.show()
-
+    mandelbrot_sensitivity_map(N=N, max_iter=max_iter, x_dim=x_dim, y_dim=y_dim)
 
