@@ -9,7 +9,7 @@ import time, statistics
 import cProfile, pstats
 from line_profiler import profile
 from numba import jit, njit, prange
-from mandelbrot_1_2 import compute_mandelbrot_naive, compute_mandelbrot_numpy
+from lecture_py_files.mandelbrot_1_2 import compute_mandelbrot_naive, compute_mandelbrot_numpy
 
 def benchmark(func, *args, n_runs=3, **kwargs):
     """Time func, return median of n_runs"""
@@ -68,7 +68,8 @@ def mandelbrot_point_numba(c: np.complex128,
 # Lecture 3 - Naive implementation using numba and mandelbrot_point_numba
 def compute_mandelbrot_hybrid(x_dim: tuple[float, float],
                              y_dim: tuple[float, float],
-                             res: tuple[int, int]):
+                             res: tuple[int, int],
+                             max_iter: int = 100):
     
     # Pulling out variables from tuples
     x_min, x_max = x_dim
@@ -85,7 +86,7 @@ def compute_mandelbrot_hybrid(x_dim: tuple[float, float],
     for i in range(res_x):
         for j in range(res_y):
             c = x[i] + 1j * y[j]
-            all_n[i, j] = mandelbrot_point_numba(c)
+            all_n[i, j] = mandelbrot_point_numba(c, max_iter)
     return all_n
 
 # Lecture 3 - Combination of mandelbrot_point_numba and compute_mandelbrot_numba using njit
@@ -152,6 +153,7 @@ if __name__ == "__main__":
     resolution_1 = (64, 64)
     resolution_2 = (1024, 1024)
 
+    """
     # Warm up: First computation doesnt count
     _ = compute_mandelbrot_full(x_dim=x_dim, y_dim=y_dim, res=resolution_1)
 
@@ -166,8 +168,16 @@ if __name__ == "__main__":
     ax.set_xlabel('Re(c)')
     ax.set_ylabel('Im(c)')
     plt.show()
+    """
 
+    result_numba_hybrid = compute_mandelbrot_hybrid(x_dim, y_dim, resolution_2)
 
+    fig, ax = plt.subplots(figsize=(8,6))
+    ax.imshow(result_numba_hybrid, extent=[x_dim[0], x_dim[1], y_dim[0], y_dim[1]], cmap='inferno', origin='lower', aspect='equal')
+    ax.set_title(' Serial Mandelbrot')
+    ax.set_xlabel('Re(c)')
+    ax.set_ylabel('Im(c)')
+    plt.show()
 
     
 

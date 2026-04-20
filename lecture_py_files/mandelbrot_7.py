@@ -3,8 +3,8 @@ from dask.distributed import Client, LocalCluster
 import dask, time, statistics
 import numpy as np
 import matplotlib.pyplot as plt
-from mandelbrot_3 import compute_mandelbrot_full
-from mandelbrot_5 import mandelbrot_chunk
+from lecture_py_files.mandelbrot_3 import compute_mandelbrot_full
+from lecture_py_files.mandelbrot_5 import mandelbrot_chunk
 
 def mandelbrot_dask(N: int,
                     x_dim: tuple[float, float],

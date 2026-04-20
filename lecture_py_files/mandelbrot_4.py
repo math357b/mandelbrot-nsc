@@ -3,7 +3,7 @@ from numba import njit
 from multiprocessing import Pool
 import time, os, statistics, matplotlib.pyplot as plt
 from pathlib import Path
-from mandelbrot_3 import benchmark, compute_mandelbrot_full
+from lecture_py_files.mandelbrot_3 import benchmark, compute_mandelbrot_full
 from monte_carlo_example import plot_worker_speedup
 
 # MP2-M1: Creates a serial implementation, equal to the one in L3  

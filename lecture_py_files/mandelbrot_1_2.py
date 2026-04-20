@@ -21,11 +21,10 @@ def benchmark(func, *args, n_runs=3):
     return median_t, result
 
 # Lecture 1 - Naive Implementation
-def mandelbrot_point_naive(c):
+def mandelbrot_point_naive(c, max_iter):
 
     # Parameters
     z = 0
-    max_iter = 100
 
     for n in range(max_iter):
         z = z**2 + c 
@@ -36,8 +35,9 @@ def mandelbrot_point_naive(c):
 # Lecture 1 - Naive Implementation        
 def compute_mandelbrot_naive(x_dim: tuple[float, float],
                              y_dim: tuple[float, float],
-                             res: tuple[int, int]):
-    
+                             res: tuple[int, int],
+                             max_iter: int = 100):
+
     # Pulling out variables from tuples
     x_min, x_max = x_dim
     y_min, y_max = y_dim
@@ -53,21 +53,19 @@ def compute_mandelbrot_naive(x_dim: tuple[float, float],
     for i in range(res_x):
         for j in range(res_y):
             c = x[i] + 1j * y[j]
-            all_n[i, j] = mandelbrot_point_naive(c)
+            all_n[i, j] = mandelbrot_point_naive(c, max_iter)
     return all_n
 
 # Lecture 2 - Numpy Implementation
 def compute_mandelbrot_numpy(x_dim: tuple[float, float],
                              y_dim: tuple[float, float],
-                             res: tuple[int, int]):
+                             res: tuple[int, int],
+                             max_iter: int = 100):
     
     # Pulling out variables from tuples
     x_min, x_max = x_dim
     y_min, y_max = y_dim
     res_x, res_y = res
-    
-    # Parameters
-    iter = 100
     
     # Create 1D arrays
     x = np.linspace(x_min, x_max, res_x)
@@ -83,7 +81,7 @@ def compute_mandelbrot_numpy(x_dim: tuple[float, float],
     Z = np.zeros(C.shape, dtype=complex) # same as #np.zeros_like(C)
     M = np.zeros(C.shape, dtype=int) 
 
-    for _ in range(iter):
+    for _ in range(max_iter):
         mask = np.abs(Z) <= 2           # Boolean mask
         Z[mask] = Z[mask]**2 + C[mask]  # Update only unescaped points (z = z**2 + c)
         M[mask] += 1                    # Increment iteration count
@@ -105,10 +103,10 @@ def compute_column_sums(A = np.ndarray,
 if __name__ == "__main__":
 
     # Parameters
-    iterations = 3
+    n_runs = 3
     x_dim = (-2, 1)
     y_dim = (-1.5, 1.5)
-    resolution = (1024, 1024)
+    resolution = (512, 512)
 
     """
     ## Problem Size Scaling (Milestone 4 - Lecture 3)
@@ -150,15 +148,14 @@ if __name__ == "__main__":
     # Median = 0.1336s(min=0.1300, max=0.1393)
     """
 
-    """
     # Benchmark and plots of naive approach
-    t_naive, M_naive = benchmark(compute_mandelbrot_naive, x_dim, y_dim, resolution, n_runs=iterations)
+    t_naive, M_naive = benchmark(compute_mandelbrot_naive, x_dim, y_dim, resolution, n_runs=n_runs)
     print(f'Computing naive approach took {t_naive} seconds')
-    plt.imshow(M_naive, cmap='hot')
+    plt.imshow(M_naive, cmap='hot', origin='lower')
     plt.title('Mandelbrot Set Figure L1')
     plt.colorbar()
-    plt.savefig("mandelbrot_naive.png")
-    """
+    plt.show()
+    #plt.savefig("mandelbrot_naive.png")
 
     """
     # Benchmark and plots of numpy approach
