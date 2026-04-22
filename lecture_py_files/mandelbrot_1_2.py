@@ -5,12 +5,31 @@ Course : Numerical Scientific Computing 2026
 """
 import numpy as np
 import matplotlib.pyplot as plt
-import time, statistics
+import time
+import statistics
 
 def benchmark(func, *args, n_runs=3):
-    """Time func, return median of n_runs"""
+    '''Benchmark a function by measuring execution time over multiple runs and return function result.
+
+    Parameters
+    ----------
+    func : callable
+        The function to benchmark.
+    *args : tuple
+        Positional arguments passed to 'func'.
+    n_runs : int, optional
+        Number of times to execute the function (default is 3).
+
+    Returns
+    -------
+    median_t : float
+        Median execution time in seconds.
+    result : Any
+        The result returned by the last function call.
+    '''
+
     times = []
-    
+
     for _ in range(n_runs):
         t0 = time.perf_counter()
         result = func(*args)
@@ -22,6 +41,26 @@ def benchmark(func, *args, n_runs=3):
 
 # Lecture 1 - Naive Implementation
 def mandelbrot_point_naive(c, max_iter):
+    '''Compute the escape iteration count for a point in the Mandelbrot set (naive approach).
+
+    This function iteratively applies the recurrence relation
+    z_{n+1} = z_n^2 + c starting from z_0 = 0, and returns the
+    iteration at which the magnitude of z exceeds 2. If the point
+    does not escape within 'max_iter' iterations, 'max_iter' is returned.
+
+    Parameters
+    ----------
+    c : complex
+        Complex number representing the point in the complex plane.
+    max_iter : int
+        Maximum number of iterations to test for divergence.
+
+    Returns
+    -------
+    n : int
+        Number of iterations before divergence (|z| > 2).
+        Returns 'max_iter' if the point does not diverge.
+    '''
 
     # Parameters
     z = 0
@@ -37,6 +76,30 @@ def compute_mandelbrot_naive(x_dim: tuple[float, float],
                              y_dim: tuple[float, float],
                              res: tuple[int, int],
                              max_iter: int = 100):
+    
+    '''Compute a Mandelbrot set grid using a naive point-by-point approach.
+
+    The function evaluates the escape iteration count for each point in a
+    2D grid of the complex plane, using 'mandelbrot_point_naive'.
+
+    Parameters
+    ----------
+    x_dim : tuple of float
+        (x_min, x_max) range of the real axis.
+    y_dim : tuple of float
+        (y_min, y_max) range of the imaginary axis.
+    res : tuple of int
+        (res_x, res_y) number of points in the x and y directions.
+    max_iter : int, optional
+        Maximum number of iterations for divergence testing (default is 100).
+
+    Returns
+    -------
+    all_n : ndarray of shape (res_x, res_y)
+        2D array where each element contains the number of iterations
+        before divergence for the corresponding point. Points that do not
+        diverge within 'max_iter' iterations are assigned 'max_iter'.
+    '''
 
     # Pulling out variables from tuples
     x_min, x_max = x_dim
@@ -61,6 +124,31 @@ def compute_mandelbrot_numpy(x_dim: tuple[float, float],
                              y_dim: tuple[float, float],
                              res: tuple[int, int],
                              max_iter: int = 100):
+    
+    '''Compute a Mandelbrot set grid using a vectorized Numpy approach.
+
+    The function evaluates the escape iteration count for each point in a
+    2D grid of the complex plane using array operations instead of explicit
+    Python loops.
+
+    Parameters
+    ----------
+    x_dim : tuple of float
+        (x_min, x_max) range of the real axis.
+    y_dim : tuple of float
+        (y_min, y_max) range of the imaginary axis.
+    res : tuple of int
+        (res_x, res_y) number of points in the x and y directions.
+    max_iter : int, optional
+        Maximum number of iterations for divergence testing (default is 100).
+
+    Returns
+    -------
+    M : ndarray of shape (res_y, res_x)
+        2D array where each element contains the number of iterations
+        before divergence for the corresponding point. Points that do not
+        diverge within 'max_iter' iterations are assigned 'max_iter'.
+    '''
     
     # Pulling out variables from tuples
     x_min, x_max = x_dim
@@ -93,12 +181,16 @@ def compute_row_sums(A = np.ndarray,
                      N = int):
     for i in range(N):
         s = np.sum(A[i,:])
+    
+    return s
 
 # Lecture 2 - Numpy Implementation
 def compute_column_sums(A = np.ndarray,
                         N = int):
     for j in range(N):
         s = np.sum(A[:,j])
+    
+    return s
 
 if __name__ == "__main__":
 

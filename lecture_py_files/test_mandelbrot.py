@@ -2,7 +2,8 @@ import pytest
 import numpy as np
 import dask
 from dask import delayed
-import time, statistics
+import time
+import statistics
 
 # All imports from lectures
 from lecture_py_files.mandelbrot_1_2 import mandelbrot_point_naive, compute_mandelbrot_naive, compute_mandelbrot_numpy

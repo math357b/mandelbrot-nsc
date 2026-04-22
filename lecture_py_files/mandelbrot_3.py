@@ -3,38 +3,51 @@ Mandelbrot Set Generator
 Author : [ Mathias Jørgensen ]
 Course : Numerical Scientific Computing 2026
 """
-import numpy as np, time
+import numpy as np
 import matplotlib.pyplot as plt
-import time, statistics
-import cProfile, pstats
+#import time
+#import statistics
+#import cProfile
+#import pstats
 from line_profiler import profile
-from numba import jit, njit, prange
-from lecture_py_files.mandelbrot_1_2 import compute_mandelbrot_naive, compute_mandelbrot_numpy
-
-def benchmark(func, *args, n_runs=3, **kwargs):
-    """Time func, return median of n_runs"""
-    times = []    
-    for _ in range(n_runs):
-        t0 = time.perf_counter()
-        result = func(*args)
-        times.append(time.perf_counter() - t0)
-    median_t = statistics.median(times)
-    print(f'{func.__name__}: '
-          f'Median: {median_t:.4f}s'
-          f'(min={min(times):.4f}, max={max(times):.4f})')
-    return median_t, result
+from numba import njit #, jit, prange
+#from lecture_py_files.mandelbrot_1_2 import compute_mandelbrot_naive, compute_mandelbrot_numpy, benchmark
 
 # Lecture 3 - Naive Implementation with profile
 @profile     
 def compute_mandelbrot_profile(x_dim: tuple[float, float],
-                             y_dim: tuple[float, float],
-                             res_x: int,
-                             res_y: int,
-                             max_iter: int = 100):
+                               y_dim: tuple[float, float],
+                               res: tuple[int, int],
+                               max_iter: int = 100):
+    '''Compute a Mandelbrot set grid using a nested-loop implementation
+    optimized for line-by-line profiling.
+
+    This function evaluates the escape iteration count for each point in a
+    2D grid of the complex plane using explicit Python loops.
+
+    Parameters
+    ----------
+    x_dim : tuple of float
+        (x_min, x_max) range of the real axis.
+    y_dim : tuple of float
+        (y_min, y_max) range of the imaginary axis.
+    res : tuple of int
+        (res_x, res_y) number of points on both axis.
+    max_iter : int, optional
+        Maximum number of iterations for divergence testing (default is 100).
+
+    Returns
+    -------
+    result : ndarray of shape (res_y, res_x)
+        2D array where each element contains the number of iterations
+        before divergence for the corresponding point. Points that do not
+        diverge within 'max_iter' iterations are assigned 'max_iter'.
+    '''
     
     # Pulling out variables from tuples
     x_min, x_max = x_dim
     y_min, y_max = y_dim
+    res_x, res_y = res
 
     # Create 1D arrays
     x = np.linspace(x_min, x_max, res_x)
@@ -58,6 +71,29 @@ def compute_mandelbrot_profile(x_dim: tuple[float, float],
 @njit
 def mandelbrot_point_numba(c: np.complex128,
                            max_iter: np.int32 = 100) -> np.int32:
+    
+    '''Compute the escape iteration count for a point in the Mandelbrot set
+    using Numba JIT compilation.
+
+    This function applies the recurrence relation
+    z_{n+1} = z_n^2 + c starting from z_0 = 0, and returns the iteration
+    at which the magnitude of z exceeds 2. If the point does not escape
+    within 'max_iter' iterations, 'max_iter' is returned.
+
+    Parameters
+    ----------
+    c : np.complex128
+        Complex number representing the point in the complex plane.
+    max_iter : np.int32, optional
+        Maximum number of iterations for divergence testing (default is 100).
+
+    Returns
+    -------
+    n : np.int32
+        Number of iterations before divergence (|z| > 2).
+        Returns 'max_iter' if the point does not diverge.
+    '''
+
     z = 0j
     for n in range(max_iter):
         if z.real*z.real + z.imag*z.imag > 4.0:
@@ -67,10 +103,36 @@ def mandelbrot_point_numba(c: np.complex128,
 
 # Lecture 3 - Naive implementation using numba and mandelbrot_point_numba
 def compute_mandelbrot_hybrid(x_dim: tuple[float, float],
-                             y_dim: tuple[float, float],
-                             res: tuple[int, int],
-                             max_iter: int = 100):
+                              y_dim: tuple[float, float],
+                              res: tuple[int, int],
+                              max_iter: int = 100):
     
+    '''Compute a Mandelbrot set grid using a hybrid approach combining
+    Python loops and a Numba-accelerated point function.
+
+    Each point in the complex plane is evaluated using
+    'mandelbrot_point_numba', which is JIT-compiled for performance,
+    while the outer grid traversal is performed using Python loops.
+
+    Parameters
+    ----------
+    x_dim : tuple of float
+        (x_min, x_max) range of the real axis.
+    y_dim : tuple of float
+        (y_min, y_max) range of the imaginary axis.
+    res : tuple of int
+        (res_x, res_y) number of points in the x and y directions.
+    max_iter : int, optional
+        Maximum number of iterations for divergence testing (default is 100).
+
+    Returns
+    -------
+    all_n : ndarray of shape (res_x, res_y)
+        2D array where each element contains the number of iterations
+        before divergence for the corresponding point. Points that do not
+        diverge within 'max_iter' iterations are assigned 'max_iter'.
+    '''
+
     # Pulling out variables from tuples
     x_min, x_max = x_dim
     y_min, y_max = y_dim
@@ -86,7 +148,7 @@ def compute_mandelbrot_hybrid(x_dim: tuple[float, float],
     for i in range(res_x):
         for j in range(res_y):
             c = x[i] + 1j * y[j]
-            all_n[i, j] = mandelbrot_point_numba(c, max_iter)
+            all_n[i, j] = mandelbrot_point_numba(c=c, max_iter=max_iter)
     return all_n
 
 # Lecture 3 - Combination of mandelbrot_point_numba and compute_mandelbrot_numba using njit
@@ -95,6 +157,32 @@ def compute_mandelbrot_full(x_dim: tuple[float, float],
                                    y_dim: tuple[float, float],
                                    res: tuple[int, int],
                                    max_iter: np.int32 = 100):
+    
+    '''Fully Numba-accelerated computation of the Mandelbrot set grid.
+
+    This function computes the escape iteration count for each point in a
+    2D grid of the complex plane using a fully compiled Numba implementation.
+    Both the outer grid traversal and inner iteration loop are optimized
+    for performance.
+
+    Parameters
+    ----------
+    x_dim : tuple of float
+        (x_min, x_max) range of the real axis.
+    y_dim : tuple of float
+        (y_min, y_max) range of the imaginary axis.
+    res : tuple of int
+        (res_x, res_y) number of points in the x and y directions.
+    max_iter : np.int32, optional
+        Maximum number of iterations for divergence testing (default is 100).
+
+    Returns
+    -------
+    result : ndarray of shape (res_y, res_x)
+        2D array where each element contains the number of iterations
+        before divergence for the corresponding point. Points that do not
+        diverge within 'max_iter' iterations are assigned 'max_iter'.
+    '''
     
     # Pulling out variables from tuples
     x_min, x_max = x_dim
@@ -123,9 +211,33 @@ def compute_mandelbrot_full(x_dim: tuple[float, float],
 @njit
 def mandelbrot_numba_typed(x_dim: tuple[float, float],
                            y_dim: tuple[float, float],
-                           res: tuple[float, float],
+                           res: tuple[int, int],
                            max_iter=100, 
                            dtype=np.float64):
+    '''Compute a Mandelbrot set grid using a typed NumPy + Numba hybrid approach.
+
+    This function generates a discretized complex plane and computes the
+    escape iteration count for each point using a Numba-compiled point function.
+
+    Parameters
+    ----------
+    x_dim : tuple of float
+        (x_min, x_max) range of the real axis.
+    y_dim : tuple of float
+        (y_min, y_max) range of the imaginary axis.
+    res : tuple of int
+        (res_x, res_y) number of points along x and y axes.
+    max_iter : int, optional
+        Maximum number of iterations for divergence testing (default is 100).
+    dtype : data-type, optional
+        Floating-point precision used for coordinate arrays (default is np.float64).
+
+    Returns
+    -------
+    result : ndarray of shape (res_y, res_x)
+        2D array where each element contains the number of iterations
+        before divergence. Points that do not diverge are assigned 'max_iter'.
+    '''
     
     # Pulling out variables from tuples
     x_min, x_max = x_dim
@@ -139,7 +251,7 @@ def mandelbrot_numba_typed(x_dim: tuple[float, float],
 
     for i in range(res_y):
         for j in range(res_x):
-            c = x[i] + 1j * y[j]
+            c = x[j] + 1j * y[i]
             result[i, j] = mandelbrot_point_numba(c, max_iter)
     return result
 
