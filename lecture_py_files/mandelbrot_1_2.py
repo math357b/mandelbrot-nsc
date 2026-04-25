@@ -68,7 +68,7 @@ def mandelbrot_point_naive(c, max_iter):
     for n in range(max_iter):
         z = z**2 + c 
         if abs(z) > 2:
-            return n
+            return n + 1
     return max_iter 
 
 # Lecture 1 - Naive Implementation        
