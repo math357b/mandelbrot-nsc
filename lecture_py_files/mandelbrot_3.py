@@ -162,8 +162,7 @@ def compute_mandelbrot_full(x_dim: tuple[float, float],
 
     This function computes the escape iteration count for each point in a
     2D grid of the complex plane using a fully compiled Numba implementation.
-    Both the outer grid traversal and inner iteration loop are optimized
-    for performance.
+    Both the outer grid traversal and inner iteration loop are optimized.
 
     Parameters
     ----------
