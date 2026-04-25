@@ -10,6 +10,7 @@ from lecture_py_files.mandelbrot_1_2 import mandelbrot_point_naive, compute_mand
 from lecture_py_files.mandelbrot_3 import mandelbrot_point_numba, compute_mandelbrot_hybrid
 from lecture_py_files.mandelbrot_5 import mandelbrot_pixel, mandelbrot_chunk, mandelbrot_serial, mandelbrot_parallel
 from lecture_py_files.mandelbrot_7 import mandelbrot_dask
+from lecture_py_files.mandelbrot_gpu import mandelbrot_gpu_f32, mandelbrot_gpu_f64
 
 #----------------------------
 # Test Numba
@@ -130,7 +131,7 @@ NAIVE_NUMPY_TEST = [
 
 @pytest.mark.parametrize('x_dim, y_dim, res, max_iter', NAIVE_NUMPY_TEST)
 def test_numpy_naive_time(x_dim, y_dim, res, max_iter):
-    
+
     naive_times = []
     numpy_times = []
 
@@ -147,3 +148,35 @@ def test_numpy_naive_time(x_dim, y_dim, res, max_iter):
     numpy_median = statistics.median(numpy_times)
 
     assert numpy_median < 0.1 * naive_median
+
+#----------------------------
+# Test GPU
+#----------------------------
+
+# Test 1: Integration test: the GPU float32 grid must match the serial result on a small grid
+ASSEMBLED_GPU_TEST = [
+    (32, (-2.0, 1.0), (-1.5, 1.5), 100)
+]
+
+@pytest.mark.parametrize('N, x_dim, y_dim, max_iter', ASSEMBLED_GPU_TEST)
+def test_pixel_match_gpu32_serial(N, x_dim, y_dim, max_iter):
+    result_serial = mandelbrot_serial(N=N, x_dim=x_dim, y_dim=y_dim, max_iter=max_iter)
+    _, result_gpu_f32 = mandelbrot_gpu_f32(N=N, max_iter=max_iter, x_dim=x_dim, y_dim=y_dim)
+
+    np.testing.assert_array_equal(result_serial, result_gpu_f32)
+
+# Test 2: Integration test: the GPU float64 grid must match the serial result on a small grid
+@pytest.mark.parametrize('N, x_dim, y_dim, max_iter', ASSEMBLED_GPU_TEST)
+def test_pixel_match_gpu64_serial(N, x_dim, y_dim, max_iter):
+    result_serial = mandelbrot_serial(N=N, x_dim=x_dim, y_dim=y_dim, max_iter=max_iter)
+    _, result_gpu_f64 = mandelbrot_gpu_f64(N=N, max_iter=max_iter, x_dim=x_dim, y_dim=y_dim)
+
+    np.testing.assert_array_equal(result_serial, result_gpu_f64)
+
+# Test 3: Integration test: the GPU float32 grid must match the GPU float64 result on a small grid
+@pytest.mark.parametrize('N, x_dim, y_dim, max_iter', ASSEMBLED_GPU_TEST)
+def test_pixel_match_gpu32_gpu64(N, x_dim, y_dim, max_iter):
+    _, result_gpu_f32 = mandelbrot_gpu_f32(N=N, max_iter=max_iter, x_dim=x_dim, y_dim=y_dim)
+    _, result_gpu_f64 = mandelbrot_gpu_f64(N=N, max_iter=max_iter, x_dim=x_dim, y_dim=y_dim)
+
+    np.testing.assert_array_equal(result_gpu_f32, result_gpu_f64)
